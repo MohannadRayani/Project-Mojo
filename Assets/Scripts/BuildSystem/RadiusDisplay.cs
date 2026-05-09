@@ -1,0 +1,65 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(LineRenderer))]
+public class RadiusDisplay : MonoBehaviour
+{ 
+    private LineRenderer lineRenderer;
+
+    [SerializeField] private float lineWidth = .1f;
+    [SerializeField] private float radius;
+    private int segments = 50;
+
+    private void Awake()
+    {
+        EnsureLineRenderer();
+    }
+
+    private void EnsureLineRenderer()
+    {
+        if (lineRenderer == null)
+            lineRenderer = GetComponent<LineRenderer>();
+
+        if (lineRenderer == null)
+            lineRenderer = gameObject.AddComponent<LineRenderer>();
+
+        lineRenderer.positionCount = segments + 1; // We add extra point, so we can close the circle.
+        lineRenderer.useWorldSpace = true;
+        lineRenderer.startWidth = lineWidth;
+        lineRenderer.endWidth = lineWidth;
+
+        var bm = FindFirstObjectByType<BuildManager>();
+        if (bm != null)
+            lineRenderer.material = bm.GetAttackRadiusMat();
+        else if (lineRenderer.material == null)
+            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+
+        lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    
+    public void CreateCircle(bool showCircle, float radius = 0)
+    {
+        EnsureLineRenderer();
+
+        lineRenderer.enabled = showCircle;
+
+        if (showCircle == false)
+            return;
+
+        float angle = 0;
+        Vector3 center = transform.position;
+
+        for (int i = 0; i < segments; i++)
+        {
+            float x = Mathf.Sin(Mathf.Deg2Rad * angle) * radius;
+            float z = Mathf.Cos(Mathf.Deg2Rad * angle) * radius;
+
+            lineRenderer.SetPosition(i, new Vector3(x + center.x, center.y, z + center.z));
+            angle += 360f / segments;
+        }
+
+        lineRenderer.SetPosition(segments, lineRenderer.GetPosition(0));
+    } 
+}
